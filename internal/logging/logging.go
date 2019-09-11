@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ContextKey defines the context key type.
@@ -69,14 +70,28 @@ func clientLoggerFields(ctx context.Context, fullMethodString string, resp inter
 	}
 
 	if getter, ok := resp.(contextIDGetter); ok {
-		var ctxID uuid.UUID
-		copy(ctxID[:], getter.GetContextId())
+		if b := getter.GetContextId(); len(b) != 0 {
+			var ctxID uuid.UUID
+			copy(ctxID[:], getter.GetContextId())
 
-		fields["grpc.ctx_id"] = ctxID
+			fields["grpc.ctx_id"] = ctxID
+		}
 	}
 
 	if err != nil {
 		fields[logrus.ErrorKey] = err
+
+		s := status.Convert(err)
+		for _, d := range s.Details() {
+			if getter, ok := d.(contextIDGetter); ok {
+				if b := getter.GetContextId(); len(b) != 0 {
+					var ctxID uuid.UUID
+					copy(ctxID[:], getter.GetContextId())
+
+					fields["grpc.ctx_id"] = ctxID
+				}
+			}
+		}
 	}
 
 	return fields
