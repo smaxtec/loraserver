@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package as;
 
-import "google/protobuf/empty.proto";
 import "api/common/common.proto";
 import "api/gw/gw.proto";
 
@@ -10,22 +9,22 @@ import "api/gw/gw.proto";
 // ApplicationServerService is the service providing the application-server interface.
 service ApplicationServerService {
     // HandleUplinkData handles uplink data received from an end-device.
-    rpc HandleUplinkData(HandleUplinkDataRequest) returns (google.protobuf.Empty) {}
+    rpc HandleUplinkData(HandleUplinkDataRequest) returns (HandleUplinkDataResponse) {}
 
     // HandleProprietaryUplink handles proprietary uplink payloads.
-    rpc HandleProprietaryUplink(HandleProprietaryUplinkRequest) returns (google.protobuf.Empty) {}
+    rpc HandleProprietaryUplink(HandleProprietaryUplinkRequest) returns (HandleProprietaryUplinkResponse) {}
 
     // HandleError handles an error message.
-    rpc HandleError(HandleErrorRequest) returns (google.protobuf.Empty) {}
+    rpc HandleError(HandleErrorRequest) returns (HandleErrorResponse) {}
 
     // HandleDownlinkACK handles a downlink ACK or nACK response.
-    rpc HandleDownlinkACK(HandleDownlinkACKRequest) returns (google.protobuf.Empty) {}
+    rpc HandleDownlinkACK(HandleDownlinkACKRequest) returns (HandleDownlinkACKResponse) {}
 
     // SetDeviceStatus updates the device-status for a device.
-    rpc SetDeviceStatus(SetDeviceStatusRequest) returns (google.protobuf.Empty) {}
+    rpc SetDeviceStatus(SetDeviceStatusRequest) returns (SetDeviceStatusResponse) {}
 
     // SetDeviceLocation updates the device-location for a device.
-    rpc SetDeviceLocation(SetDeviceLocationRequest) returns (google.protobuf.Empty) {}
+    rpc SetDeviceLocation(SetDeviceLocationRequest) returns (SetDeviceLocationResponse) {}
 }
 
 enum RXWindow {
@@ -87,6 +86,11 @@ message HandleUplinkDataRequest {
     DeviceActivationContext device_activation_context = 10;
 }
 
+message HandleUplinkDataResponse {
+    // Context ID (UUID).
+    bytes context_id = 1;
+}
+
 message HandleProprietaryUplinkRequest {
     // MACPayload of the proprietary LoRaWAN frame.
     bytes mac_payload = 1;
@@ -99,6 +103,11 @@ message HandleProprietaryUplinkRequest {
 
     // RXInfo contains the RX related meta-data.
     repeated gw.UplinkRXInfo rx_info = 4;
+}
+
+message HandleProprietaryUplinkResponse {
+    // Context ID (UUID).
+    bytes context_id = 1;
 }
 
 message HandleErrorRequest {
@@ -115,6 +124,11 @@ message HandleErrorRequest {
     uint32 f_cnt = 5;
 }
 
+message HandleErrorResponse {
+    // Context ID (UUID).
+    bytes context_id = 1;
+}
+
 message HandleDownlinkACKRequest {
     // Device EUI (8 bytes).
     bytes dev_eui = 1;
@@ -124,6 +138,11 @@ message HandleDownlinkACKRequest {
 
     // Frame was acknowledged?
     bool acknowledged = 3;
+}
+
+message HandleDownlinkACKResponse {
+    // Context ID (UUID).
+    bytes context_id = 1;
 }
 
 message SetDeviceStatusRequest {
@@ -150,10 +169,20 @@ message SetDeviceStatusRequest {
     float battery_level = 6;
 }
 
+message SetDeviceStatusResponse {
+    // Context ID (UUID).
+    bytes context_id = 1;
+}
+
 message SetDeviceLocationRequest {
     // Device EUI (8 bytes).
     bytes dev_eui = 1;
 
     // The location of the device.
     common.Location location = 2;
+}
+
+message SetDeviceLocationResponse {
+    // Context ID (UUID).
+    bytes context_id = 1;
 }
