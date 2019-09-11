@@ -215,12 +215,12 @@ type ApplicationClient struct {
 	SetDeviceStatusChan     chan as.SetDeviceStatusRequest
 	SetDeviceLocationChan   chan as.SetDeviceLocationRequest
 
-	HandleDataUpResponse        empty.Empty
-	HandleProprietaryUpResponse empty.Empty
-	HandleErrorResponse         empty.Empty
-	HandleDownlinkACKResponse   empty.Empty
-	SetDeviceStatusResponse     empty.Empty
-	SetDeviceLocationResponse   empty.Empty
+	HandleDataUpResponse        as.HandleUplinkDataResponse
+	HandleProprietaryUpResponse as.HandleProprietaryUplinkResponse
+	HandleErrorResponse         as.HandleErrorResponse
+	HandleDownlinkACKResponse   as.HandleDownlinkACKResponse
+	SetDeviceStatusResponse     as.SetDeviceStatusResponse
+	SetDeviceLocationResponse   as.SetDeviceLocationResponse
 }
 
 // NewApplicationClient returns a new ApplicationClient.
@@ -236,7 +236,7 @@ func NewApplicationClient() *ApplicationClient {
 }
 
 // HandleUplinkData method.
-func (t *ApplicationClient) HandleUplinkData(ctx context.Context, in *as.HandleUplinkDataRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (t *ApplicationClient) HandleUplinkData(ctx context.Context, in *as.HandleUplinkDataRequest, opts ...grpc.CallOption) (*as.HandleUplinkDataResponse, error) {
 	if t.HandleDataUpErr != nil {
 		return nil, t.HandleDataUpErr
 	}
@@ -245,7 +245,7 @@ func (t *ApplicationClient) HandleUplinkData(ctx context.Context, in *as.HandleU
 }
 
 // HandleProprietaryUplink method.
-func (t *ApplicationClient) HandleProprietaryUplink(ctx context.Context, in *as.HandleProprietaryUplinkRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (t *ApplicationClient) HandleProprietaryUplink(ctx context.Context, in *as.HandleProprietaryUplinkRequest, opts ...grpc.CallOption) (*as.HandleProprietaryUplinkResponse, error) {
 	if t.HandleProprietaryUpErr != nil {
 		return nil, t.HandleProprietaryUpErr
 	}
@@ -254,25 +254,25 @@ func (t *ApplicationClient) HandleProprietaryUplink(ctx context.Context, in *as.
 }
 
 // HandleError method.
-func (t *ApplicationClient) HandleError(ctx context.Context, in *as.HandleErrorRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (t *ApplicationClient) HandleError(ctx context.Context, in *as.HandleErrorRequest, opts ...grpc.CallOption) (*as.HandleErrorResponse, error) {
 	t.HandleErrorChan <- *in
 	return &t.HandleErrorResponse, nil
 }
 
 // HandleDownlinkACK method.
-func (t *ApplicationClient) HandleDownlinkACK(ctx context.Context, in *as.HandleDownlinkACKRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (t *ApplicationClient) HandleDownlinkACK(ctx context.Context, in *as.HandleDownlinkACKRequest, opts ...grpc.CallOption) (*as.HandleDownlinkACKResponse, error) {
 	t.HandleDownlinkACKChan <- *in
 	return &t.HandleDownlinkACKResponse, nil
 }
 
 // SetDeviceStatus method.
-func (t *ApplicationClient) SetDeviceStatus(ctx context.Context, in *as.SetDeviceStatusRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (t *ApplicationClient) SetDeviceStatus(ctx context.Context, in *as.SetDeviceStatusRequest, opts ...grpc.CallOption) (*as.SetDeviceStatusResponse, error) {
 	t.SetDeviceStatusChan <- *in
 	return &t.SetDeviceStatusResponse, t.SetDeviceStatusError
 }
 
 // SetDeviceLocation method.
-func (t *ApplicationClient) SetDeviceLocation(ctx context.Context, in *as.SetDeviceLocationRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (t *ApplicationClient) SetDeviceLocation(ctx context.Context, in *as.SetDeviceLocationRequest, opts ...grpc.CallOption) (*as.SetDeviceLocationResponse, error) {
 	t.SetDeviceLocationChan <- *in
 	return &t.SetDeviceLocationResponse, t.SetDeviceLocationErrror
 }
