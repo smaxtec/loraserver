@@ -31,10 +31,14 @@ func (ts *GatewayConfigurationTestSuite) SetupSuite() {
 	assert.NoError(storage.Setup(conf))
 	test.MustResetDB(storage.DB().DB)
 
+	rp := storage.RoutingProfile{}
+	assert.NoError(storage.CreateRoutingProfile(context.Background(), storage.DB(), &rp))
+
 	ts.backend = test.NewGatewayBackend()
 	gateway.SetBackend(ts.backend)
 	ts.gateway = storage.Gateway{
-		GatewayID: lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
+		GatewayID:        lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
+		RoutingProfileID: rp.ID,
 	}
 	assert.NoError(storage.CreateGateway(context.Background(), storage.DB(), &ts.gateway))
 }
@@ -156,8 +160,12 @@ func (ts *GatewayStatsTestSuite) SetupSuite() {
 	assert.NoError(storage.Setup(conf))
 	test.MustResetDB(storage.DB().DB)
 
+	rp := storage.RoutingProfile{}
+	assert.NoError(storage.CreateRoutingProfile(context.Background(), storage.DB(), &rp))
+
 	ts.gateway = storage.Gateway{
-		GatewayID: lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
+		GatewayID:        lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
+		RoutingProfileID: rp.ID,
 	}
 	assert.NoError(storage.CreateGateway(context.Background(), storage.DB(), &ts.gateway))
 
