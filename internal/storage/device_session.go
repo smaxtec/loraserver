@@ -56,6 +56,9 @@ type DeviceGatewayRXInfo struct {
 	GatewayID lorawan.EUI64
 	RSSI      int
 	LoRaSNR   float64
+	Antenna   uint32
+	Board     uint32
+	Context   []byte
 }
 
 // UplinkHistory contains the meta-data of an uplink transmission.
@@ -65,10 +68,6 @@ type UplinkHistory struct {
 	TXPowerIndex int
 	GatewayCount int
 }
-
-// UplinkGatewayHistory contains the uplink gateway history meta-data.
-// This is used for Class-B and Class-C downlinks.
-type UplinkGatewayHistory struct{}
 
 // KeyEnvelope defined a key-envelope.
 type KeyEnvelope struct {
@@ -139,7 +138,6 @@ type DeviceSession struct {
 	ExtraUplinkChannels   map[int]loraband.Channel // extra uplink channels, configured by the user
 	ChannelFrequencies    []int                    // frequency of each channel
 	UplinkHistory         []UplinkHistory          // contains the last 20 transmissions
-	UplinkGatewayHistory  map[lorawan.EUI64]UplinkGatewayHistory
 
 	// LastDevStatusRequest contains the timestamp when the last device-status
 	// request was made.
@@ -263,17 +261,6 @@ func (s *DeviceSession) ResetToBootParameters(dp DeviceProfile) {
 	if dp.PingSlotPeriod != 0 {
 		s.PingSlotNb = (1 << 12) / dp.PingSlotPeriod
 	}
-}
-
-// GetDownlinkGatewayMAC returns the gateway MAC of the gateway close to the
-// device.
-// TODO: refactor so that it uses GetDeviceGatewayRXInfoSet.
-func (s DeviceSession) GetDownlinkGatewayMAC() (lorawan.EUI64, error) {
-	for mac := range s.UplinkGatewayHistory {
-		return mac, nil
-	}
-
-	return lorawan.EUI64{}, errors.New("uplink gateway-history is empty")
 }
 
 // GetRandomDevAddr returns a random DevAddr, prefixed with NwkID based on the
@@ -663,8 +650,7 @@ func deviceSessionToPB(d DeviceSession) DeviceSessionPB {
 		MaxSupportedTxPowerIndex: uint32(d.MaxSupportedTXPowerIndex),
 		NbTrans:                  uint32(d.NbTrans),
 
-		ExtraUplinkChannels:  make(map[uint32]*DeviceSessionPBChannel),
-		UplinkGatewayHistory: make(map[string]*DeviceSessionPBUplinkGatewayHistory),
+		ExtraUplinkChannels: make(map[uint32]*DeviceSessionPBChannel),
 
 		LastDeviceStatusRequestTimeUnixNs: d.LastDevStatusRequested.UnixNano(),
 
@@ -718,10 +704,6 @@ func deviceSessionToPB(d DeviceSession) DeviceSessionPB {
 		})
 	}
 
-	for mac := range d.UplinkGatewayHistory {
-		out.UplinkGatewayHistory[mac.String()] = nil
-	}
-
 	if d.PendingRejoinDeviceSession != nil {
 		dsPB := deviceSessionToPB(*d.PendingRejoinDeviceSession)
 		b, err := proto.Marshal(&dsPB)
@@ -765,8 +747,7 @@ func deviceSessionFromPB(d DeviceSessionPB) DeviceSession {
 		MaxSupportedTXPowerIndex: int(d.MaxSupportedTxPowerIndex),
 		NbTrans:                  uint8(d.NbTrans),
 
-		ExtraUplinkChannels:  make(map[int]loraband.Channel),
-		UplinkGatewayHistory: make(map[lorawan.EUI64]UplinkGatewayHistory),
+		ExtraUplinkChannels: make(map[int]loraband.Channel),
 
 		BeaconLocked:      d.BeaconLocked,
 		PingSlotNb:        int(d.PingSlotNb),
@@ -832,14 +813,6 @@ func deviceSessionFromPB(d DeviceSessionPB) DeviceSession {
 		})
 	}
 
-	for idStr := range d.UplinkGatewayHistory {
-		var id lorawan.EUI64
-		if err := id.UnmarshalText([]byte(idStr)); err != nil {
-			continue
-		}
-		out.UplinkGatewayHistory[id] = UplinkGatewayHistory{}
-	}
-
 	if len(d.PendingRejoinDeviceSession) != 0 {
 		var dsPB DeviceSessionPB
 		if err := proto.Unmarshal(d.PendingRejoinDeviceSession, &dsPB); err != nil {
@@ -864,6 +837,9 @@ func deviceGatewayRXInfoSetToPB(d DeviceGatewayRXInfoSet) DeviceGatewayRXInfoSet
 			GatewayId: d.Items[i].GatewayID[:],
 			Rssi:      int32(d.Items[i].RSSI),
 			LoraSnr:   d.Items[i].LoRaSNR,
+			Board:     d.Items[i].Board,
+			Antenna:   d.Items[i].Antenna,
+			Context:   d.Items[i].Context,
 		})
 	}
 
@@ -883,6 +859,9 @@ func deviceGatewayRXInfoSetFromPB(d DeviceGatewayRXInfoSetPB) DeviceGatewayRXInf
 			GatewayID: id,
 			RSSI:      int(d.Items[i].Rssi),
 			LoRaSNR:   d.Items[i].LoraSnr,
+			Board:     d.Items[i].Board,
+			Antenna:   d.Items[i].Antenna,
+			Context:   d.Items[i].Context,
 		})
 	}
 
