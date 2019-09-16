@@ -66,7 +66,6 @@ func clientLoggerFields(ctx context.Context, fullMethodString string, resp inter
 		"grpc.method":   method,
 		"grpc.duration": time.Since(start),
 		"grpc.code":     code.String(),
-		"ctx_id":        ctx.Value(ContextIDKey),
 	}
 
 	if getter, ok := resp.(contextIDGetter); ok {
