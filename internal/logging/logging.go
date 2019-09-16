@@ -51,19 +51,30 @@ func UnaryServerCtxIDInterceptor(ctx context.Context, req interface{}, info *grp
 }
 
 func UnaryClientCtxIDInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	// read reasponse meta-data (set by remote server)
+	var header metadata.MD
+	opts = append(opts, grpc.Header(&header))
+
+	// set start time and invoke api methd
 	startTime := time.Now()
 	err := invoker(ctx, method, req, reply, cc, opts...)
 
+	// get error code
 	code := grpc_logging.DefaultErrorToCode(err)
-	level := grpc_logrus.DefaultCodeToLevel(code)
-	logFields := clientLoggerFields(ctx, method, reply, err, code, startTime)
 
+	// get log-level for code
+	level := grpc_logrus.DefaultCodeToLevel(code)
+
+	// get log fields
+	logFields := clientLoggerFields(ctx, method, reply, err, code, startTime, header)
+
+	// log api call
 	levelLogf(log.WithFields(logFields), level, "finished client unary call")
 
 	return err
 }
 
-func clientLoggerFields(ctx context.Context, fullMethodString string, resp interface{}, err error, code codes.Code, start time.Time) logrus.Fields {
+func clientLoggerFields(ctx context.Context, fullMethodString string, resp interface{}, err error, code codes.Code, start time.Time, header metadata.MD) logrus.Fields {
 	service := path.Dir(fullMethodString)[1:]
 	method := path.Base(fullMethodString)
 
@@ -74,6 +85,7 @@ func clientLoggerFields(ctx context.Context, fullMethodString string, resp inter
 		"grpc.method":   method,
 		"grpc.duration": time.Since(start),
 		"grpc.code":     code.String(),
+		"ctx_id":        ctx.Value(ContextIDKey),
 	}
 
 	if err != nil {
@@ -81,12 +93,10 @@ func clientLoggerFields(ctx context.Context, fullMethodString string, resp inter
 	}
 
 	// read context id from meta-data
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if values := md.Get("ctx-id"); len(values) != 0 {
-			ctxID, err := uuid.FromString(values[0])
-			if err == nil {
-				fields["grpc.ctx_id"] = ctxID
-			}
+	if values := header.Get("ctx-id"); len(values) != 0 {
+		ctxID, err := uuid.FromString(values[0])
+		if err == nil {
+			fields["grpc.ctx_id"] = ctxID
 		}
 	}
 
