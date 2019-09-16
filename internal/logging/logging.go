@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/metadata"
 )
 
 // ContextKey defines the context key type.
@@ -30,15 +30,23 @@ type contextIDGetter interface {
 // UnaryServerCtxIDInterceptor adds the ContextIDKey to the context and sets
 // it as a log field.
 func UnaryServerCtxIDInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	// generate unique id
 	ctxID, err := uuid.NewV4()
 	if err != nil {
 		return nil, errors.Wrap(err, "new uuid error")
 	}
+
+	// set id to context and add as logrus field
 	ctx = context.WithValue(ctx, ContextIDKey, ctxID)
 	ctxlogrus.AddFields(ctx, log.Fields{
 		"ctx_id": ctxID,
 	})
 
+	// set id as response header
+	header := metadata.Pairs("ctx-id", ctxID.String())
+	grpc.SendHeader(ctx, header)
+
+	// execute the handler
 	return handler(ctx, req)
 }
 
@@ -68,27 +76,16 @@ func clientLoggerFields(ctx context.Context, fullMethodString string, resp inter
 		"grpc.code":     code.String(),
 	}
 
-	if getter, ok := resp.(contextIDGetter); ok {
-		if b := getter.GetContextId(); len(b) != 0 {
-			var ctxID uuid.UUID
-			copy(ctxID[:], getter.GetContextId())
-
-			fields["grpc.ctx_id"] = ctxID
-		}
-	}
-
 	if err != nil {
 		fields[logrus.ErrorKey] = err
+	}
 
-		s := status.Convert(err)
-		for _, d := range s.Details() {
-			if getter, ok := d.(contextIDGetter); ok {
-				if b := getter.GetContextId(); len(b) != 0 {
-					var ctxID uuid.UUID
-					copy(ctxID[:], getter.GetContextId())
-
-					fields["grpc.ctx_id"] = ctxID
-				}
+	// read context id from meta-data
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if values := md.Get("ctx-id"); len(values) != 0 {
+			ctxID, err := uuid.FromString(values[0])
+			if err == nil {
+				fields["grpc.ctx_id"] = ctxID
 			}
 		}
 	}
