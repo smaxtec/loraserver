@@ -49,6 +49,7 @@ func init() {
 	rootCmd.PersistentFlags().Int("log-level", 4, "debug=5, info=4, error=2, fatal=1, panic=0")
 
 	viper.BindPFlag("general.log_level", rootCmd.PersistentFlags().Lookup("log-level"))
+	viper.SetDefault("general.log_formatter", "")
 
 	// default values
 	viper.SetDefault("redis.url", "redis://localhost:6379")

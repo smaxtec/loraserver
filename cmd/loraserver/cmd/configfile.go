@@ -17,6 +17,8 @@ const configTemplate = `[general]
 # debug=5, info=4, warning=3, error=2, fatal=1, panic=0
 log_level={{ .General.LogLevel }}
 
+# currently supports fluentd only (Formatting for Google Kubernetes Engine)
+log_formatter = {{.General.LogFormatter }}
 
 # PostgreSQL settings.
 #

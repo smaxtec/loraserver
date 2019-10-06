@@ -14,14 +14,15 @@ var Version string
 // Config defines the configuration structure.
 type Config struct {
 	General struct {
-		LogLevel int `mapstructure:"log_level"`
+		LogLevel     int    `mapstructure:"log_level"`
+		LogFormatter string `mapstructure:"log_formatter"`
 	}
 
 	PostgreSQL struct {
-		DSN         string `mapstructure:"dsn"`
-		Automigrate bool
-		MaxOpenConnections int               `mapstructure:"max_open_connections"`
-		MaxIdleConnections int               `mapstructure:"max_idle_connections"`
+		DSN                string `mapstructure:"dsn"`
+		Automigrate        bool
+		MaxOpenConnections int `mapstructure:"max_open_connections"`
+		MaxIdleConnections int `mapstructure:"max_idle_connections"`
 	} `mapstructure:"postgresql"`
 
 	Redis struct {

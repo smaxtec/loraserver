@@ -14,6 +14,7 @@ import (
 	"github.com/brocaar/loraserver/internal/backend/gateway/azureiothub"
 	"github.com/brocaar/loraserver/internal/metrics"
 	"github.com/jmoiron/sqlx"
+	fluentd_formatter "github.com/joonix/log"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -44,6 +45,7 @@ func run(cmd *cobra.Command, args []string) error {
 	var gwStats = new(gateway.StatsHandler)
 
 	tasks := []func() error{
+		setLogFormatter,
 		setLogLevel,
 		setupBand,
 		setRXParameters,
@@ -153,6 +155,16 @@ func setupMetrics() error {
 		return errors.Wrap(err, "setup metrics error")
 	}
 
+	return nil
+}
+
+func setLogFormatter() error {
+	if config.C.General.LogFormatter == "fluentd" {
+		log.Info("Enable fluentd/gke Logging")
+		log.SetFormatter(fluentd_formatter.NewFormatter())
+	} else if config.C.General.LogFormatter != "" {
+		log.Fatalf("Unknown LogFormatter %s", config.C.General.LogFormatter)
+	}
 	return nil
 }
 
