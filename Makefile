@@ -64,3 +64,13 @@ serve: build
 
 run-compose-test:
 	docker-compose run --rm loraserver make test
+
+SX_DOCKER_TAG := sx-loraserver
+VERSION := dev-3
+DOCKER_ID_USER=smaxtec
+sx-deploy:
+	docker build -f Dockerfile-cached-modules . -t "$(SX_DOCKER_TAG)"
+	docker tag $(SX_DOCKER_TAG) $(SX_DOCKER_TAG):latest
+	docker tag $(SX_DOCKER_TAG) $(DOCKER_ID_USER)/$(SX_DOCKER_TAG)
+	docker tag $(SX_DOCKER_TAG) $(DOCKER_ID_USER)/$(SX_DOCKER_TAG):$(VERSION)
+	docker push $(DOCKER_ID_USER)/$(SX_DOCKER_TAG)

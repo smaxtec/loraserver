@@ -48,3 +48,5 @@ require (
 	gopkg.in/gorp.v1 v1.7.2 // indirect
 	pack.ag/amqp v0.12.1
 )
+
+replace github.com/brocaar/lorawan => github.com/smaxtec/lorawan v0.0.0-20191002204059-c0d00b8a2da5

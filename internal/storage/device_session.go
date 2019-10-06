@@ -289,6 +289,8 @@ func ValidateAndGetFullFCntUp(s DeviceSession, fCntUp uint32) (uint32, bool) {
 	if gap < band.Band().GetDefaults().MaxFCntGap {
 		return s.FCntUp + gap, true
 	}
+	log.Warningf("Framecount Gap to %d big for %x (actual %d VS expected %d)", gap, s.DevEUI, fCntUp, s.FCntUp)
+
 	return 0, false
 }
 
@@ -392,6 +394,10 @@ func GetDeviceSessionsForDevAddr(ctx context.Context, p *redis.Pool, devAddr lor
 		return nil, errors.Wrap(err, "get members error")
 	}
 
+	if len(devEUIs) == 0 {
+		log.Warningf("no device EUIs found for address %x", devAddr)
+	}
+
 	for _, b := range devEUIs {
 		var devEUI lorawan.EUI64
 		copy(devEUI[:], b)
@@ -434,8 +440,13 @@ func GetDeviceSessionForPHYPayload(ctx context.Context, p *redis.Pool, phy loraw
 	originalFCnt := macPL.FHDR.FCnt
 
 	sessions, err := GetDeviceSessionsForDevAddr(ctx, p, macPL.FHDR.DevAddr)
+
 	if err != nil {
 		return DeviceSession{}, err
+	}
+
+	if len(sessions) == 0 {
+		log.Warningf("no sessions found for address %x", macPL.FHDR.DevAddr)
 	}
 
 	for _, s := range sessions {
